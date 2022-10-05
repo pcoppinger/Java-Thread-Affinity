@@ -23,8 +23,25 @@ JAVA_HOME ?= /usr/java/default
 JAVA_LIB := $(JAVA_HOME)/jre/lib
 JVM_SHARED_LIBS := -L$(JAVA_LIB)/amd64/server -L$(JAVA_LIB)/i386/server  -L$(JAVA_LIB)/amd64/jrockit/ -L$(JAVA_LIB)/i386/jrockit/
 
+TARGETTRIPLET := $(shell $(CC) -dumpmachine)
+ifeq ($(JNI_PLATFORM),)
+ifeq ($(findstring mingw,$(TARGETTRIPLET)),mingw)
+JNI_PLATFORM:= win32
+else
+ifeq ($(findstring linux,$(TARGETTRIPLET)),linux)
+JNI_PLATFORM:= linux
+JVM_PLATFORM_LIBS:= -ljvm -lrt
+else
+ifeq ($(findstring darwin,$(TARGETTRIPLET)),darwin)
+JNI_PLATFORM:= darwin
+# add more checks here
+endif
+endif
+endif
+endif
+
 CXX=g++
-INCLUDES := -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -I $(WORKING_DIR)
+INCLUDES := -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/$(JNI_PLATFORM) -I $(WORKING_DIR)
 
 # classpath for javah
 ifdef CLASSPATH
@@ -38,7 +55,7 @@ endif
 all: $(TARGET)
 
 $(TARGET): $(JNI_HEADERS) $(JNI_SOURCES)
-	$(CXX) -O3 -Wall -shared -fPIC $(JVM_SHARED_LIBS) -ljvm -lrt $(INCLUDES) $(JNI_SOURCES) -o $(TARGET)
+	$(CXX) -O3 -Wall -shared -fPIC $(JVM_SHARED_LIBS) $(JVM_PLATFORM_LIBS) $(INCLUDES) $(JNI_SOURCES) -o $(TARGET)
 
 $(JNI_HEADERS): $(JNI_JAVA_SOURCES)
 	mkdir -p $(TARGET_DIR)/jni
