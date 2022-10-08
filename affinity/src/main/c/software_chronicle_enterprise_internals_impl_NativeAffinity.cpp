@@ -27,6 +27,16 @@
 
 #include "software_chronicle_enterprise_internals_impl_NativeAffinity.h"
 
+#if __APPLE__
+typedef struct {
+    uint32_t    dummy;
+} cpu_set_t;
+#define CPU_ZERO(mask)                      (((cpu_set_t *)(mask))->dummy=0)
+#define sched_getaffinity(pid,size,mask)    (-1)
+#define sched_setaffinity(pid,size,mask)    (-1)
+#define sched_getcpu()                      (-1)
+#endif
+
 /*
  * Class:     software_chronicle_enterprise_internals_impl_NativeAffinity
  * Method:    getAffinity0
